@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+authlib
+python-jose
+pymongo
+kubernetes
+pyyaml
+cryptography
+itsdangerous
+
+# 🔐 auth
+passlib==1.7.4
+bcrypt==3.2.2
+pytest>=7.0.0

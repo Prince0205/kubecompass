@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Clusters</h2>
+
+{% if user.role == "admin" %}
+<form
+  method="post"
+  action="/clusters/upload"
+  enctype="multipart/form-data"
+  class="cluster-form"
+>
+  <input
+    type="text"
+    name="name"
+    placeholder="cluster-name"
+    required
+  >
+
+  <select name="provider" required>
+    <option value="">Select Provider</option>
+    <option value="vanilla">Vanilla Kubernetes</option>
+    <option value="eks">EKS</option>
+    <option value="aks">AKS</option>
+    <option value="gke">GKE</option>
+    <option value="openshift">OpenShift</option>
+  </select>
+
+  <input
+    type="file"
+    name="kubeconfig"
+    required
+  >
+
+  <button type="submit">Add Cluster</button>
+</form>
+{% endif %}
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Provider</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in clusters %}
+    <tr>
+      <td>{{ c.name }}</td>
+      <td>{{ c.provider }}</td>
+      <td>
+        <a href="/clusters/select/{{ c._id }}">Select</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kubernetes Compass</title>
+  <link rel="stylesheet" href="/static/css/login.css" />
+</head>
+<body>
+
+<div class="login-bg"></div>
+
+<div class="login-container">
+  <div class="login-card">
+
+    <!-- Header -->
+    <div class="login-header">
+      <div class="logo">
+        <img src="/static/img/kubernetes-compass-icon.png"
+            alt="Kubernetes Compass"
+            class="logo-img" />
+        <span class="logo-text">KUBERNETES COMPASS</span>
+      </div>
+      <div class="caption">Unified Kubernetes Management Platform</div>
+    </div>
+
+    <!-- Form -->
+    <form method="post" action="/login">
+      <div class="field">
+        <input type="text" name="username" placeholder="Username" required />
+      </div>
+
+      <div class="field password-field">
+        <input type="password" name="password" placeholder="Password" required />
+      </div>
+
+      <button class="login-btn" type="submit">
+        LOGIN →
+      </button>
+    </form>
+
+    <!-- Providers -->
+    <div class="providers">
+      <span>Connect to:</span>
+      <div class="provider-icons">
+        <span class="provider k8s">K</span>
+        <span class="provider">EKS</span>
+        <span class="provider">AKS</span>
+        <span class="provider">GKE</span>
+        <span class="provider">OpenShift</span>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      Version 1.0.0 | © 2026 Kubernetes Compass
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

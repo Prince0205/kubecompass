@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>ReplicaSets</h1>
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>NAME</th>
+      <th>DESIRED</th>
+      <th>READY</th>
+      <th>AVAILABLE</th>
+      <th>OWNER</th>
+    </tr>
+  </thead>
+  <tbody id="replicasets-body">
+    <tr>
+      <td colspan="5">Loading ReplicaSets...</td>
+    </tr>
+  </tbody>
+</table>
+
+<script src="/static/js/replicasets.js"></script>
+{% endblock %}

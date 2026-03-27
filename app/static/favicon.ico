@@ -1,0 +1,12 @@
+from PIL import Image, ImageDraw
+
+# Create a simple favicon image (16x16 pixels)
+img = Image.new('RGB', (16, 16), color='white')
+draw = ImageDraw.Draw(img)
+
+# Draw a simple blue square
+draw.rectangle([2, 2, 13, 13], fill='#0078d4')
+
+# Save as favicon
+img.save('/c:/Users/Admin/Documents/kube-control-plane/app/static/favicon.ico')
+print("Favicon created successfully!")

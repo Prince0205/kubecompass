@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Cluster Overview</h1>
+
+<div class="overview-grid" id="overview">
+  <p>Loading cluster information...</p>
+</div>
+
+<script>
+async function loadClusterOverview() {
+  const res = await fetch("/api/cluster/overview")
+  const el = document.getElementById("overview")
+
+  if (!res.ok) {
+    el.innerHTML = "<p>Select a cluster to view overview.</p>"
+    return
+  }
+
+  const data = await res.json()
+
+  el.innerHTML = `
+    <div class="card">
+      <h3>Cluster</h3>
+      <p><strong>${data.name}</strong></p>
+      <p>${data.provider}</p>
+    </div>
+
+    <div class="card">
+      <h3>Kubernetes Version</h3>
+      <p>${data.version}</p>
+    </div>
+
+    <div class="card">
+      <h3>Nodes</h3>
+      <p>${data.nodes.ready} / ${data.nodes.total} Ready</p>
+    </div>
+
+    <div class="card">
+      <h3>Namespaces</h3>
+      <p>${data.namespaces}</p>
+    </div>
+
+    <div class="card">
+      <h3>Pods</h3>
+      <p>${data.pods.running} / ${data.pods.total} Running</p>
+    </div>
+
+    <div class="card">
+      <h3>Cluster Health</h3>
+      <p class="${data.health === 'Healthy' ? 'status-ok' : 'status-warn'}">
+        ${data.health}
+      </p>
+    </div>
+  `
+}
+
+document.addEventListener("DOMContentLoaded", loadClusterOverview)
+</script>
+
+{% endblock %}

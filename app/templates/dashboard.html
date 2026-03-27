@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Welcome, {{ user.email }}</h1>
+
+<div class="cards">
+  <div class="card">
+    <h3>Clusters</h3>
+    <p>Manage Kubernetes clusters</p>
+    <a href="/clusters">Open →</a>
+  </div>
+
+  <div class="card">
+    <h3>Namespaces</h3>
+    <p>View and request namespaces</p>
+    <a href="/namespaces">Open →</a>
+  </div>
+
+  {% if user.role == "admin" %}
+  <div class="card">
+    <h3>Approvals</h3>
+    <p>Pending namespace requests</p>
+    <a href="/admin/requests">Review →</a>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

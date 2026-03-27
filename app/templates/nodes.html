@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Nodes</h1>
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>NAME</th>
+      <th>STATUS</th>
+      <th>ROLE</th>
+      <th>AGE</th>
+      <th>VERSION</th>
+    </tr>
+  </thead>
+  <tbody id="nodes-body">
+    <tr><td colspan="5">Select a cluster to view nodes</td></tr>
+  </tbody>
+</table>
+
+<script src="/static/js/nodes.js"></script>
+
+{% endblock %}

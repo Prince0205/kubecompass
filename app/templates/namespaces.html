@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Namespaces</h2>
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ns in namespaces %}
+    <tr>
+      <td>{{ ns.metadata.name }}</td>
+      <td>
+        <span class="status active">Active</span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<hr>
+
+<h3>Request New Namespace</h3>
+
+<form method="post" action="/namespace/request" class="form-inline">
+  <input name="namespace" placeholder="team-namespace" required>
+  <input name="cpu" placeholder="2">
+  <input name="memory" placeholder="4Gi">
+  <button type="submit">Request Namespace</button>
+</form>
+
+{% endblock %}

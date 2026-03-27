@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>PODS</h1>
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>NAME</th>
+      <th>STATUS</th>
+      <th>NODE</th>
+      <th>RESTART COUNT</th>
+    </tr>
+  </thead>
+  <tbody id="pods-body">
+    <tr><td colspan="3">Loading pods...</td></tr>
+  </tbody>
+</table>
+
+<script src="/static/js/pods.js"></script>
+{% endblock %}

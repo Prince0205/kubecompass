@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kubernetes Compass</title>
+  <link rel="icon" type="image/png"
+      href="/static/img/kubernetes-compass-icon.png">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<!-- Top Bar -->
+<header class="topbar">
+  <div class="topbar-left">
+  <img src="/static/img/kubernetes-compass-icon.png"
+       class="navbar-logo"
+       alt="Kubernetes Compass" />
+  <span class="brand">Kubernetes Compass</span>
+  </div>
+
+
+  <div class="topbar-center">
+    <select id="clusterSelect"></select>
+    <select id="namespaceSelect"></select>
+  </div>
+
+  <div class="topbar-right">
+    <span class="user">👤 {{ user.email }}</span>
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+</header>
+
+<!-- App Layout -->
+<div class="app-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <a href="/dashboard" class="nav-item">🏠 Dashboard</a>
+    <a href="/cluster-overview" class="nav-item">📊 Cluster Overview</a>
+    <a href="/clusters" class="nav-item">☸ Clusters</a>
+    <a href="/namespaces" class="nav-item">📦 Namespaces</a>
+    <a href="/nodes" class="nav-item">🖥 Nodes</a>
+
+    <div class="nav-divider"></div>
+
+    <div class="nav-section">Workloads</div>
+    <div class="nav-item dropdown">
+      <div class="dropdown-toggle" onclick="toggleDropdown('workloads')">▶ Workloads</div>
+      <div id="drop-workloads" class="dropdown-list hidden">
+        <a href="/pods" class="nav-item">Pods</a>
+        <a href="/deployments" class="nav-item">Deployments</a>
+        <a href="/replicasets" class="nav-item">ReplicaSets</a>
+        <a href="#" onclick="loadResource('statefulsets')" class="nav-item">StatefulSets</a>
+      </div>
+    </div>
+
+    <div class="nav-section">Configuration</div>
+    <div class="nav-item dropdown">
+      <div class="dropdown-toggle" onclick="toggleDropdown('config')">▶ Configuration</div>
+      <div id="drop-config" class="dropdown-list hidden">
+        <a href="#" onclick="loadResource('configmaps')" class="nav-item">ConfigMaps</a>
+        <a href="#" onclick="loadResource('secrets')" class="nav-item">Secrets</a>
+        <a href="#" onclick="loadResource('resourcequotas')" class="nav-item">ResourceQuotas</a>
+        <a href="#" onclick="loadResource('horizontalpodautoscalers')" class="nav-item">HPA</a>
+      </div>
+    </div>
+
+    <div class="nav-section">Network</div>
+    <div class="nav-item dropdown">
+      <div class="dropdown-toggle" onclick="toggleDropdown('network')">▶ Network</div>
+      <div id="drop-network" class="dropdown-list hidden">
+        <a href="#" onclick="loadResource('services')" class="nav-item">Services</a>
+        <a href="#" onclick="loadResource('ingresses')" class="nav-item">Ingress</a>
+        <a href="#" onclick="loadResource('networkpolicies')" class="nav-item">Network Policies</a>
+      </div>
+    </div>
+
+    <div class="nav-section">Storage</div>
+    <div class="nav-item dropdown">
+      <div class="dropdown-toggle" onclick="toggleDropdown('storage')">▶ Storage</div>
+      <div id="drop-storage" class="dropdown-list hidden">
+        <a href="#" onclick="loadResource('pv')" class="nav-item">PersistentVolumes</a>
+        <a href="#" onclick="loadResource('pvc')" class="nav-item">PersistentVolumeClaims</a>
+        <a href="#" onclick="loadResource('storageclasses')" class="nav-item">StorageClasses</a>
+      </div>
+    </div>
+
+    <div class="nav-section">Access Control</div>
+    <div class="nav-item dropdown">
+      <div class="dropdown-toggle" onclick="toggleDropdown('access')">▶ Access Control</div>
+      <div id="drop-access" class="dropdown-list hidden">
+        <a href="#" onclick="loadResource('serviceaccounts')" class="nav-item">Service Accounts</a>
+        <a href="#" onclick="loadResource('roles')" class="nav-item">Roles</a>
+        <a href="#" onclick="loadResource('rolebindings')" class="nav-item">RoleBindings</a>
+        <a href="#" onclick="loadResource('clusterroles')" class="nav-item">ClusterRoles</a>
+        <a href="#" onclick="loadResource('clusterrolebindings')" class="nav-item">ClusterRoleBindings</a>
+      </div>
+    </div>
+
+    {% if user.role == "admin" %}
+      <div class="nav-section">Admin</div>
+      <a href="/admin/requests" class="nav-item">✅ Approvals</a>
+    {% endif %}
+  </aside>
+
+  <!-- Main Content -->
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script src="/static/js/context.js"></script>
+<script src="/static/js/resources.js"></script>
+<script>
+  window.USER_ROLE = "{{ user.role }}"
+</script>
+
+<div id="overlay" class="overlay hidden" onclick="closeOverlay()">
+  <div class="overlay-panel" onclick="event.stopPropagation()">
+    <div class="overlay-header">
+      <span id="overlay-title"></span>
+      <button onclick="closeOverlay()">✕</button>
+    </div>
+
+    <div id="overlay-content"></div>
+  </div>
+</div>
+
+<script>
+function openOverlay(title, html) {
+  document.getElementById("overlay-title").innerText = title
+  document.getElementById("overlay-content").innerHTML = html
+  document.getElementById("overlay").classList.remove("hidden")
+}
+
+function closeOverlay() {
+  const overlay = document.getElementById("overlay")
+  overlay.classList.add("hidden")
+  document.getElementById("overlay-content").innerHTML = ""
+}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+<script src="/static/js/yaml-editor.js"></script>
+
+</body>
+</html>

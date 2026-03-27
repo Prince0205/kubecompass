@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Namespace: {{ namespace }}</h2>
+
+<h3>Pods</h3>
+<table>
+  <tr><th>Name</th><th>Status</th></tr>
+  {% for p in resources.pods %}
+  <tr>
+    <td>{{ p.metadata.name }}</td>
+    <td>{{ p.status.phase }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Services</h3>
+<table>
+  <tr><th>Name</th><th>Type</th></tr>
+  {% for s in resources.services %}
+  <tr>
+    <td>{{ s.metadata.name }}</td>
+    <td>{{ s.spec.type }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Deployments</h3>
+<table>
+  <tr><th>Name</th><th>Replicas</th></tr>
+  {% for d in resources.deployments %}
+  <tr>
+    <td>{{ d.metadata.name }}</td>
+    <td>{{ d.status.replicas }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>StatefulSets</h3>
+<table>
+  <tr><th>Name</th><th>Replicas</th></tr>
+  {% for s in resources.statefulsets %}
+  <tr>
+    <td>{{ s.metadata.name }}</td>
+    <td>{{ s.status.replicas }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>ConfigMaps</h3>
+<table>
+  <tr><th>Name</th><th>Data</th></tr>
+  {% for cm in resources.configmaps %}
+  <tr>
+    <td>{{ cm.metadata.name }}</td>
+    <td>{{ cm.data|default("No data") }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Storage</h3>
+<h4>PersistentVolumes</h4>
+<table>
+  <tr><th>Name</th><th>Capacity</th></tr>
+  {% for pv in resources.pv %}
+  <tr>
+    <td>{{ pv.metadata.name }}</td>
+    <td>{{ pv.spec.capacity | default({})['storage'] if pv.spec.capacity is defined else '' }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>PersistentVolumeClaims</h4>
+<table>
+  <tr><th>Name</th><th>Namespace</th><th>Status</th></tr>
+  {% for pvc in resources.pvc %}
+  <tr>
+    <td>{{ pvc.metadata.name }}</td>
+    <td>{{ pvc.metadata.namespace }}</td>
+    <td>{{ pvc.status.phase }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>StorageClasses</h4>
+<table>
+  <tr><th>Name</th><th>Provisioner</th></tr>
+  {% for sc in resources.storageclasses %}
+  <tr>
+    <td>{{ sc.metadata.name }}</td>
+    <td>{{ sc.provisioner }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Access Control (RBAC)</h3>
+<h4>Roles</h4>
+<table>
+  <tr><th>Name</th><th>Namespace</th></tr>
+  {% for r in resources.roles %}
+  <tr>
+    <td>{{ r.metadata.name }}</td>
+    <td>{{ r.metadata.namespace }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>RoleBindings</h4>
+<table>
+  <tr><th>Name</th><th>Namespace</th></tr>
+  {% for rb in resources.rolebindings %}
+  <tr>
+    <td>{{ rb.metadata.name }}</td>
+    <td>{{ rb.metadata.namespace }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>ClusterRoles</h4>
+<table>
+  <tr><th>Name</th></tr>
+  {% for cr in resources.clusterroles %}
+  <tr>
+    <td>{{ cr.metadata.name }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>ClusterRoleBindings</h4>
+<table>
+  <tr><th>Name</th></tr>
+  {% for crb in resources.clusterrolebindings %}
+  <tr>
+    <td>{{ crb.metadata.name }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h4>Service Accounts</h4>
+<table>
+  <tr><th>Name</th><th>Namespace</th></tr>
+  {% for sa in resources.serviceaccounts %}
+  <tr>
+    <td>{{ sa.metadata.name }}</td>
+    <td>{{ sa.metadata.namespace }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% endblock %}

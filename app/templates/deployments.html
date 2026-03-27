@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Deployments</h1>
+
+<table class="k8s-table">
+  <thead>
+    <tr>
+      <th>NAME</th>
+      <th>REPLICAS</th>
+      <th>READY</th>
+    </tr>
+  </thead>
+  <tbody id="deployments-body">
+    <tr><td colspan="3">Loading deployments...</td></tr>
+  </tbody>
+</table>
+
+<script src="/static/js/deployments.js"></script>
+{% endblock %}

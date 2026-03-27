@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h2>Pending Namespace Requests</h2>
+
+<table>
+  <tr>
+    <th>Cluster</th>
+    <th>Namespace</th>
+    <th>Requested By</th>
+    <th>CPU</th>
+    <th>Memory</th>
+    <th>Action</th>
+  </tr>
+
+  {% for r in requests %}
+  <tr>
+    <td>{{ r.cluster_id }}</td>
+    <td>{{ r.namespace }}</td>
+    <td>{{ r.requested_by }}</td>
+    <td>{{ r.cpu }}</td>
+    <td>{{ r.memory }}</td>
+    <td>
+      <a href="/admin/requests/approve/{{ r._id }}">Approve</a> |
+      <a href="/admin/requests/reject/{{ r._id }}">Reject</a>
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+
+{% if requests|length == 0 %}
+<p>No pending requests 🎉</p>
+{% endif %}
+
+{% endblock %}
