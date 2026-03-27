@@ -18,7 +18,6 @@ from app.auth.rbac import require_role
 from app.k8s.loader import load_k8s_client
 from app.db import clusters
 from bson import ObjectId
-import yaml
 import logging
 
 router = APIRouter(prefix="/api/resources/workload")

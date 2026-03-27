@@ -14,7 +14,6 @@ This module handles:
 
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
-import re
 import warnings
 from kubernetes.client.rest import ApiException
 from kubernetes.client import CustomObjectsApi
@@ -386,113 +385,6 @@ def parse_node_metrics(api_client, host=None, token=None) -> List[Dict[str, Any]
         logger.error(f"CustomObjectsApi failed: {type(e).__name__}: {e}", exc_info=True)
 
     return []
-
-
-def _parse_node_metrics_fallback(api_client) -> List[Dict[str, Any]]:
-    """Fallback method using direct HTTP requests"""
-    import logging
-    import requests
-    import urllib3
-
-    logger = logging.getLogger(__name__)
-
-    try:
-        # Get the configuration from api_client
-        config = None
-        if hasattr(api_client, "configuration"):
-            config = api_client.configuration
-        elif hasattr(api_client, "_configuration"):
-            config = api_client._configuration
-
-        # Get host - try multiple approaches
-        host = None
-        if config:
-            # Try different attribute names
-            for attr in ["host", "host_url", "base_url", "server_address"]:
-                if hasattr(config, attr):
-                    host = getattr(config, attr)
-                    break
-
-        if not host:
-            # Get from api_client itself
-            for attr in ["host", "base_url"]:
-                if hasattr(api_client, attr):
-                    host = getattr(api_client, attr)
-                    break
-
-        # Get token - try from configuration
-        token = None
-        if config:
-            # Try to get token from configuration
-            for attr in ["api_key", "api_key_prefix", "token"]:
-                if hasattr(config, attr):
-                    val = getattr(config, attr)
-                    if isinstance(val, dict) and "Authorization" in val:
-                        token = val["Authorization"]
-                    elif isinstance(val, str) and val:
-                        token = f"Bearer {val}"
-                        break
-
-        if not token:
-            # Try from default headers
-            if hasattr(api_client, "default_headers"):
-                for key, val in api_client.default_headers.items():
-                    if key.lower() == "authorization":
-                        token = val
-                        break
-
-        if not host:
-            logger.error("Could not determine API host")
-            return []
-
-        # Make the request
-        url = f"{host.rstrip('/')}/apis/metrics.k8s.io/v1beta1/nodes"
-        headers = {}
-        if token:
-            headers["Authorization"] = token
-        headers["Accept"] = "application/json"
-
-        # Disable SSL warnings for internal K8s calls
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-        response = requests.get(url, headers=headers, verify=False, timeout=15)
-
-        if response.status_code != 200:
-            logger.error(
-                f"Metrics API returned {response.status_code}: {response.text[:200]}"
-            )
-            return []
-
-        metrics_data = response.json()
-        items = metrics_data.get("items", [])
-        result = []
-
-        for item in items:
-            name = item.get("metadata", {}).get("name")
-            usage = item.get("usage", {})
-
-            cpu_raw = usage.get("cpu", "0m") if usage else "0m"
-            memory_raw = usage.get("memory", "0Mi") if usage else "0Mi"
-
-            # Convert memory to bytes for display formatting
-            memory_bytes = convert_memory_to_bytes(memory_raw)
-
-            result.append(
-                {
-                    "name": name,
-                    "cpu": format_cpu_for_display(cpu_raw),
-                    "memory": format_memory_for_display(memory_bytes),
-                    "cpu_cores": convert_cpu_to_cores(cpu_raw),
-                    "memory_bytes": memory_bytes,
-                }
-            )
-
-        logger.info(f"HTTP fallback parsed {len(result)} node metrics")
-        return result
-
-    except Exception as e:
-        logger.error(f"HTTP fallback failed: {type(e).__name__}: {e}")
-        return []
 
 
 def parse_pod_metrics(api_client, namespace: str) -> List[Dict[str, Any]]:

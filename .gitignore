@@ -7,3 +7,6 @@ dist/
 /.env
 kubeconfigs/
 *.log
+.pytest_cache/
+.ruff_cache/
+nul

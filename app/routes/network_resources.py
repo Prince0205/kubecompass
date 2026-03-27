@@ -6,7 +6,6 @@ Handles: Services, Endpoints, Ingresses, NetworkPolicies
 from fastapi import APIRouter, HTTPException, Request, Depends
 from kubernetes.client.rest import ApiException
 from app.auth.rbac import require_role
-from app.auth.session import get_current_user
 from app.k8s.loader import load_k8s_client
 from app.db import clusters
 from bson import ObjectId

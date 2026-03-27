@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, Depends, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from app.auth.session import get_current_user
 from app.auth.rbac import require_role
 from app.db import clusters
 from bson import ObjectId
@@ -11,6 +10,7 @@ import yaml
 ui_router = APIRouter()
 api_router = APIRouter(prefix="/api/resources/pods")
 templates = Jinja2Templates(directory="app/templates")
+
 
 def get_context(request):
     cluster_id = request.session.get("active_cluster")
@@ -24,24 +24,17 @@ def get_context(request):
 
     return k8s, namespace
 
+
 @ui_router.get("/pods", response_class=HTMLResponse)
-def pods_page(
-    request: Request,
-    user=Depends(require_role(["admin", "edit", "view"]))
-):
-    return templates.TemplateResponse(
-        "pods.html",
-        {
-            "request": request,
-            "user": user
-        }
-    )
+def pods_page(request: Request, user=Depends(require_role(["admin", "edit", "view"]))):
+    return templates.TemplateResponse("pods.html", {"request": request, "user": user})
+
 
 @api_router.get("/{pod_name}")
 def pod_details(
     pod_name: str,
     request: Request,
-    user=Depends(require_role(["admin", "edit", "view"]))
+    user=Depends(require_role(["admin", "edit", "view"])),
 ):
     k8s, namespace = get_context(request)
     v1 = k8s.CoreV1Api()
@@ -56,16 +49,16 @@ def pod_details(
         "containers": [c.name for c in pod.spec.containers],
         "images": [c.image for c in pod.spec.containers],
         "restarts": sum(
-            cs.restart_count
-            for cs in (pod.status.container_statuses or [])
-        )
+            cs.restart_count for cs in (pod.status.container_statuses or [])
+        ),
     }
+
 
 @api_router.get("/{pod_name}/events")
 def pod_events(
     pod_name: str,
     request: Request,
-    user=Depends(require_role(["admin", "edit", "view"]))
+    user=Depends(require_role(["admin", "edit", "view"])),
 ):
     k8s, namespace = get_context(request)
     v1 = k8s.CoreV1Api()
@@ -77,7 +70,7 @@ def pod_events(
             "type": e.type,
             "reason": e.reason,
             "message": e.message,
-            "time": e.last_timestamp or e.event_time
+            "time": e.last_timestamp or e.event_time,
         }
         for e in events
         if e.involved_object
@@ -85,47 +78,42 @@ def pod_events(
         and e.involved_object.name == pod_name
     ]
 
+
 @api_router.get("/{pod_name}/logs")
 def pod_logs(
     pod_name: str,
     request: Request,
     container: str = Query(None),
     tail: int = Query(200),
-    user=Depends(require_role(["admin", "edit", "view"]))
+    user=Depends(require_role(["admin", "edit", "view"])),
 ):
     k8s, namespace = get_context(request)
     v1 = k8s.CoreV1Api()
 
     logs = v1.read_namespaced_pod_log(
-        name=pod_name,
-        namespace=namespace,
-        container=container,
-        tail_lines=tail
+        name=pod_name, namespace=namespace, container=container, tail_lines=tail
     )
 
     return {"logs": logs}
 
+
 @api_router.delete("/{pod_name}")
 def delete_pod(
-    pod_name: str,
-    request: Request,
-    user=Depends(require_role(["admin", "edit"]))
+    pod_name: str, request: Request, user=Depends(require_role(["admin", "edit"]))
 ):
     k8s, namespace = get_context(request)
     v1 = k8s.CoreV1Api()
 
-    v1.delete_namespaced_pod(
-        name=pod_name,
-        namespace=namespace
-    )
+    v1.delete_namespaced_pod(name=pod_name, namespace=namespace)
 
     return {"status": "deleted"}
+
 
 @api_router.get("/{pod_name}/yaml")
 def pod_yaml(
     pod_name: str,
     request: Request,
-    user=Depends(require_role(["admin", "edit", "view"]))
+    user=Depends(require_role(["admin", "edit", "view"])),
 ):
     k8s, namespace = get_context(request)
     v1 = k8s.CoreV1Api()
@@ -139,10 +127,4 @@ def pod_yaml(
     pod.metadata.creation_timestamp = None
     pod.status = None
 
-    return {
-        "yaml": yaml.safe_dump(
-            pod.to_dict(),
-            sort_keys=False
-        ),
-        "editable": False
-    }
+    return {"yaml": yaml.safe_dump(pod.to_dict(), sort_keys=False), "editable": False}

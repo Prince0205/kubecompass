@@ -1,15 +1,11 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
-from kubernetes import client
-from kubernetes.client import ApiClient
-from kubernetes.client.rest import ApiException
 from bson import ObjectId
 import yaml
 import json
 import logging
 
-from app.auth.session import get_current_user
 from app.auth.rbac import require_role
 from app.db import clusters
 from app.db import audit_logs
