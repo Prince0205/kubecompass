@@ -420,6 +420,12 @@ def apply_resource_yaml(
     if not yaml_content:
         raise HTTPException(status_code=400, detail="YAML content is required")
 
+    # Capture current YAML before applying for history
+    from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+    yaml_before = _fetch_resource_yaml(kmod, resource_type, name, namespace)
+    user_email = user.get("email") if isinstance(user, dict) else str(user)
+
     try:
         data = yaml.safe_load(yaml_content)
     except yaml.YAMLError as e:
@@ -752,6 +758,21 @@ def apply_resource_yaml(
             raise HTTPException(
                 status_code=400, detail=f"Unsupported resource type: {resource_type}"
             )
+
+        # Capture snapshot after successful apply for history
+        try:
+            yaml_after = _fetch_resource_yaml(kmod, resource_type, name, namespace)
+            save_resource_snapshot(
+                request=request,
+                resource_type=resource_type,
+                resource_name=name,
+                operation="apply",
+                user_email=user_email,
+                yaml_before=yaml_before,
+                yaml_after=yaml_after,
+            )
+        except Exception as snap_err:
+            logger.error(f"Failed to save history snapshot: {snap_err}")
 
         return {"status": "applied", "name": name, "type": resource_type}
     except ApiException as e:

@@ -731,6 +731,14 @@ async def apply_resource_yaml(
     if "yaml" not in body:
         raise HTTPException(status_code=400, detail="Missing 'yaml' in request body")
 
+    # Capture snapshot before apply for history
+    from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+    user_email = user.get("email") if isinstance(user, dict) else str(user)
+    yaml_before = (
+        _fetch_resource_yaml(k8s, resource, name, namespace) if not dry_run else None
+    )
+
     try:
         parsed = yaml.safe_load(body["yaml"])
     except yaml.YAMLError as e:
@@ -843,12 +851,19 @@ async def apply_resource_yaml(
             headers=headers,
         )
 
+        resp_status = resp.status if hasattr(resp, "status") else 200
         resp_bytes = resp.data if hasattr(resp, "data") else resp.read()
         resp_text = (
             resp_bytes.decode("utf-8")
             if hasattr(resp_bytes, "decode")
             else str(resp_bytes)
         )
+
+        if resp_status >= 400:
+            raise HTTPException(
+                status_code=resp_status,
+                detail=f"Kubernetes API returned {resp_status}: {resp_text}",
+            )
 
         if dry_run:
             try:
@@ -858,6 +873,23 @@ async def apply_resource_yaml(
             return {"dry_run": True, "preview": preview}
 
         logger.info(f"Successfully applied {resource}/{name} via server-side apply")
+
+        # Save snapshot for history
+        if not dry_run:
+            try:
+                yaml_after = _fetch_resource_yaml(k8s, resource, name, namespace)
+                save_resource_snapshot(
+                    request=request,
+                    resource_type=resource,
+                    resource_name=name,
+                    operation="apply",
+                    user_email=user_email,
+                    yaml_before=yaml_before,
+                    yaml_after=yaml_after,
+                )
+            except Exception as snap_err:
+                logger.error(f"Failed to save history snapshot: {snap_err}")
+
         return {
             "status": "applied",
             "message": f"{resource.capitalize()} {name} updated successfully",
@@ -894,6 +926,11 @@ async def delete_resource(
     namespace = request.session.get("active_namespace", "default")
     effective_namespace = namespace if namespace != "_all" else "default"
 
+    # Capture snapshot before delete for history
+    from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+    user_email = user.get("email") if isinstance(user, dict) else str(user)
+
     from kubernetes.client import ApiClient
 
     api_client = k8s.ApiClient() if hasattr(k8s, "ApiClient") else ApiClient()
@@ -905,6 +942,7 @@ async def delete_resource(
         "configmaps": f"/api/v1/namespaces/{namespace}/configmaps/{name}",
         "secrets": f"/api/v1/namespaces/{namespace}/secrets/{name}",
         "deployments": f"/apis/apps/v1/namespaces/{namespace}/deployments/{name}",
+        "replicasets": f"/apis/apps/v1/namespaces/{namespace}/replicasets/{name}",
         "statefulsets": f"/apis/apps/v1/namespaces/{namespace}/statefulsets/{name}",
         "daemonsets": f"/apis/apps/v1/namespaces/{namespace}/daemonsets/{name}",
         "jobs": f"/apis/batch/v1/namespaces/{namespace}/jobs/{name}",
@@ -936,6 +974,9 @@ async def delete_resource(
         "Accept": "application/json",
     }
 
+    # Snapshot before delete
+    yaml_before = _fetch_resource_yaml(k8s, resource, name, namespace)
+
     try:
         resp = api_client.rest_client.pool_manager.request(
             "DELETE",
@@ -944,6 +985,17 @@ async def delete_resource(
         )
 
         logger.info(f"Successfully deleted {resource}/{name}")
+
+        # Save snapshot for history
+        save_resource_snapshot(
+            request=request,
+            resource_type=resource,
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
+
         return {
             "status": "deleted",
             "message": f"{resource.capitalize()} {name} deleted successfully",

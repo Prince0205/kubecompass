@@ -19,6 +19,9 @@ import {
   ClipboardDocumentCheckIcon,
   KeyIcon,
   CubeIcon,
+  ShieldCheckIcon,
+  ClockIcon,
+  CurrencyDollarIcon,
 } from '@heroicons/react/24/outline'
 import axios from 'axios'
 import { useAppContext } from '../context/AppContext'
@@ -91,6 +94,9 @@ export default function Sidebar() {
         { label: 'Nodes', path: '/nodes', icon: ServerStackIcon },
         { label: 'Approvals', path: '/approvals', icon: ClipboardDocumentCheckIcon },
         { label: 'Metrics', path: '/metrics', icon: CpuChipIcon },
+        { label: 'Security', path: '/security', icon: ShieldCheckIcon },
+        { label: 'History', path: '/history', icon: ClockIcon },
+        { label: 'Cost Analysis', path: '/cost', icon: CurrencyDollarIcon },
       ],
     },
     {

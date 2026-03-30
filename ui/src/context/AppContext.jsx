@@ -83,13 +83,8 @@ export const AppProvider = ({ children }) => {
             clusterToUse = clusterList[0].id
           }
 
-          // Sync with backend session
-          setActiveCluster(clusterToUse)
-          setActiveNamespace('default')
-          localStorage.setItem('activeCluster', clusterToUse)
-          localStorage.setItem('activeNamespace', 'default')
-          
-          // Set context on backend
+          // Set context on backend FIRST, then update local state
+          // This prevents race condition where fetchNamespaces fires before context is set
           try {
             await axios.post('/v1/context/cluster', { cluster_id: clusterToUse }, {
               withCredentials: true
@@ -100,6 +95,11 @@ export const AppProvider = ({ children }) => {
           } catch (err) {
             console.error('Error setting cluster context:', err)
           }
+
+          setActiveCluster(clusterToUse)
+          setActiveNamespace('default')
+          localStorage.setItem('activeCluster', clusterToUse)
+          localStorage.setItem('activeNamespace', 'default')
         }
         setError(null)
         setInitialized(true)

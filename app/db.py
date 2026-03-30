@@ -8,3 +8,4 @@ users = db.users
 clusters = db.clusters
 namespace_requests = db.namespace_requests
 audit_logs = db["audit_logs"]
+resource_history = db["resource_history"]

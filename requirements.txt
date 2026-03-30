@@ -1,5 +1,6 @@
 fastapi
-uvicorn
+uvicorn[standard]
+websockets>=10.4
 jinja2
 python-multipart
 authlib

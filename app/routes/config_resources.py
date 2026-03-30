@@ -158,8 +158,26 @@ async def delete_configmap(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "configmaps", name, namespace)
+
         v1 = k8s.CoreV1Api()
         v1.delete_namespaced_config_map(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="configmaps",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:
@@ -297,8 +315,26 @@ async def delete_secret(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "secrets", name, namespace)
+
         v1 = k8s.CoreV1Api()
         v1.delete_namespaced_secret(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="secrets",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:
@@ -691,8 +727,26 @@ async def delete_service_account(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "serviceaccounts", name, namespace)
+
         core = k8s.CoreV1Api()
         core.delete_namespaced_service_account(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="serviceaccounts",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:

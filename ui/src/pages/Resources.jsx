@@ -27,6 +27,7 @@ export default function Resources() {
   const [selectedResource, setSelectedResource] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
   const isFirstRender = React.useRef(true)
+  const prevResourceType = React.useRef('')
 
   // CRD instance state
   const [crdMeta, setCrdMeta] = useState(location.state?.crdMeta || null)
@@ -81,7 +82,25 @@ export default function Resources() {
     title = 'Pods'
     columns = [
       { key: 'name', label: 'Name' },
-      { key: 'status', label: 'Status' },
+      {
+        key: 'status',
+        label: 'Status',
+        render: (value) => {
+          const errorStatuses = ['CrashLoopBackOff', 'Error', 'OOMKilled', 'ContainerCannotRun', 'CreateContainerConfigError', 'CreateContainerError', 'RunContainerError']
+          const warningStatuses = ['ImagePullBackOff', 'ErrImagePull', 'InvalidImageName', 'Pending', 'Terminating']
+          const okStatuses = ['Running', 'Succeeded', 'Completed']
+          if (errorStatuses.includes(value)) {
+            return <span className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs border border-red-500/30">{value}</span>
+          }
+          if (warningStatuses.includes(value)) {
+            return <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-400 rounded text-xs border border-yellow-500/30">{value}</span>
+          }
+          if (okStatuses.includes(value)) {
+            return <span className="px-2 py-0.5 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/30">{value}</span>
+          }
+          return <span className="px-2 py-0.5 bg-slate-500/10 text-slate-400 rounded text-xs border border-slate-500/30">{value || '-'}</span>
+        },
+      },
       { key: 'ready', label: 'Ready' },
       { key: 'restarts', label: 'Restarts' },
       { key: 'age', label: 'Age' },
@@ -130,7 +149,22 @@ export default function Resources() {
     title = 'Jobs'
     columns = [
       { key: 'name', label: 'Name' },
-      { key: 'status', label: 'Status' },
+      {
+        key: 'status',
+        label: 'Status',
+        render: (value) => {
+          if (value === 'Complete' || value === 'Succeeded') {
+            return <span className="px-2 py-0.5 bg-green-500/10 text-green-400 rounded text-xs border border-green-500/30">{value}</span>
+          }
+          if (value === 'Failed') {
+            return <span className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs border border-red-500/30">{value}</span>
+          }
+          if (value === 'Running') {
+            return <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-xs border border-blue-500/30">{value}</span>
+          }
+          return <span className="px-2 py-0.5 bg-slate-500/10 text-slate-400 rounded text-xs border border-slate-500/30">{value || '-'}</span>
+        },
+      },
       { key: 'completions', label: 'Completions' },
       { key: 'age', label: 'Age' },
     ]
@@ -347,8 +381,16 @@ export default function Resources() {
     // Skip on first render to avoid flickering
     if (isFirstRender.current) {
       isFirstRender.current = false
+      prevResourceType.current = resourceType
       return
     }
+
+    // Only trigger on resourceType changes, not on namespace changes
+    if (resourceType === prevResourceType.current) {
+      prevResourceType.current = resourceType
+      return
+    }
+    prevResourceType.current = resourceType
     
     const isClusterScopedResource = CLUSTER_SCOPED_TYPES.includes(resourceType) ||
       (isCustomResourceInstance && crdMeta?.scope === 'Cluster')

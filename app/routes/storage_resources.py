@@ -162,8 +162,27 @@ async def delete_persistent_volume(
             raise HTTPException(404, "Cluster not found")
         k8s = load_k8s_client(cluster["kubeconfig_path"])
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        namespace = request.session.get("active_namespace", "default")
+        yaml_before = _fetch_resource_yaml(k8s, "pvs", name, namespace)
+
         v1 = k8s.CoreV1Api()
         v1.delete_persistent_volume(name)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="pvs",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:
@@ -295,8 +314,26 @@ async def delete_persistent_volume_claim(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "pvcs", name, namespace)
+
         v1 = k8s.CoreV1Api()
         v1.delete_namespaced_persistent_volume_claim(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="pvcs",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:

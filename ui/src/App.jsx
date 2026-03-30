@@ -12,6 +12,9 @@ import Editor from './pages/Editor'
 import Resources from './pages/Resources'
 import RBACResources from './pages/RBACResources'
 import Nodes from './pages/Nodes'
+import Security from './pages/Security'
+import History from './pages/History'
+import CostAnalysis from './pages/CostAnalysis'
 
 function ProtectedLayout() {
   const { auth, authLoading } = useAppContext()
@@ -55,6 +58,9 @@ function ProtectedLayout() {
             <Route path="/namespaces" element={<Namespaces />} />
             <Route path="/clusters" element={<Clusters />} />
             <Route path="/nodes" element={<Nodes />} />
+            <Route path="/security" element={<Security />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/cost" element={<CostAnalysis />} />
             <Route path="/approvals" element={<Approvals />} />
             <Route path="/editor" element={<Editor />} />
             <Route path="/resources" element={<Resources />} />

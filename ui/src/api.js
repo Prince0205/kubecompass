@@ -252,3 +252,32 @@ export const namespaceRequestsAPI = {
   approve: (id, action, comment) => apiClient.post(`/api/namespace-requests/${id}/approve`, { action, comment }),
   delete: (id) => apiClient.delete(`/api/namespace-requests/${id}`),
 }
+
+// ============================================================================
+// SECURITY API CALLS
+// ============================================================================
+
+export const securityAPI = {
+  scan: () => apiClient.get('/api/security/scan'),
+}
+
+// ============================================================================
+// HISTORY API CALLS
+// ============================================================================
+
+export const historyAPI = {
+  list: (params) => apiClient.get('/api/history', { params }),
+  getTypes: () => apiClient.get('/api/history/types'),
+  getEntry: (id) => apiClient.get(`/api/history/${id}`),
+  getDiff: (id, params) => apiClient.get(`/api/history/${id}/diff`, { params }),
+  restore: (id) => apiClient.post(`/api/history/${id}/restore`),
+}
+
+// ============================================================================
+// COST ANALYSIS API CALLS
+// ============================================================================
+
+export const costAPI = {
+  analyze: () => apiClient.get('/api/cost/analyze'),
+  rightsize: () => apiClient.get('/api/cost/rightsize'),
+}

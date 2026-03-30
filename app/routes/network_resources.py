@@ -138,8 +138,26 @@ async def delete_service(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "services", name, namespace)
+
         v1 = k8s.CoreV1Api()
         v1.delete_namespaced_service(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="services",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:
@@ -381,8 +399,26 @@ async def delete_ingress(
     k8s, namespace = get_k8s_context(request)
 
     try:
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = (
+            current_user.get("email")
+            if isinstance(current_user, dict)
+            else str(current_user)
+        )
+        yaml_before = _fetch_resource_yaml(k8s, "ingresses", name, namespace)
+
         networking = k8s.NetworkingV1Api()
         networking.delete_namespaced_ingress(name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="ingresses",
+            resource_name=name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": name}
     except ApiException as e:

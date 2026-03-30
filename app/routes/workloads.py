@@ -92,11 +92,36 @@ def list_pods(request: Request, user=Depends(require_role(["admin", "edit", "vie
                 cs.restart_count for cs in (pod.status.container_statuses or [])
             )
 
+            # Determine effective status from container states
+            effective_status = pod.status.phase
+            container_issues = []
+
+            for cs in pod.status.container_statuses or []:
+                if cs.state and cs.state.waiting:
+                    reason = cs.state.waiting.reason or ""
+                    if reason in (
+                        "CrashLoopBackOff",
+                        "ImagePullBackOff",
+                        "ErrImagePull",
+                        "CreateContainerConfigError",
+                        "CreateContainerError",
+                        "RunContainerError",
+                        "InvalidImageName",
+                    ):
+                        container_issues.append(reason)
+                elif cs.state and cs.state.terminated:
+                    reason = cs.state.terminated.reason or ""
+                    if reason in ("Error", "OOMKilled", "ContainerCannotRun"):
+                        container_issues.append(reason)
+
+            if container_issues:
+                effective_status = container_issues[0]
+
             result.append(
                 {
                     "name": pod.metadata.name,
-                    "namespace": namespace,
-                    "status": pod.status.phase,
+                    "namespace": pod.metadata.namespace or namespace,
+                    "status": effective_status,
                     "node": pod.spec.node_name or "Unscheduled",
                     "restarts": restarts,
                     "containers": len(pod.spec.containers),
@@ -222,7 +247,22 @@ def delete_pod(
         k8s, namespace = get_k8s_context(request)
         v1 = k8s.CoreV1Api()
 
+        # Snapshot before delete
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(k8s, "pods", pod_name, namespace)
+
         v1.delete_namespaced_pod(pod_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="pods",
+            resource_name=pod_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": pod_name}
 
@@ -408,8 +448,29 @@ def scale_deployment(
         if replicas is None:
             raise HTTPException(400, "replicas is required")
 
+        # Snapshot before scale
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(
+            k8s, "deployments", deployment_name, namespace
+        )
+
         body = {"spec": {"replicas": replicas}}
         result = apps.patch_namespaced_deployment(deployment_name, namespace, body)
+
+        yaml_after = _fetch_resource_yaml(
+            k8s, "deployments", deployment_name, namespace
+        )
+        save_resource_snapshot(
+            request=request,
+            resource_type="deployments",
+            resource_name=deployment_name,
+            operation="scale",
+            user_email=user_email,
+            yaml_before=yaml_before,
+            yaml_after=yaml_after,
+        )
 
         return {
             "status": "scaled",
@@ -446,6 +507,14 @@ def update_deployment_image(
             f"Updating deployment {deployment_name} in namespace {namespace} container {container_index} to image {new_image}"
         )
 
+        # Snapshot before update
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(
+            k8s, "deployments", deployment_name, namespace
+        )
+
         deployment = apps.read_namespaced_deployment(deployment_name, namespace)
 
         containers = deployment.spec.template.spec.containers
@@ -472,6 +541,23 @@ def update_deployment_image(
             deployment_name, namespace, patch, field_manager="kube-compass"
         )
 
+        logger.info(
+            f"Successfully updated deployment {deployment_name} container {container_name} to image {new_image}"
+        )
+
+        yaml_after = _fetch_resource_yaml(
+            k8s, "deployments", deployment_name, namespace
+        )
+        save_resource_snapshot(
+            request=request,
+            resource_type="deployments",
+            resource_name=deployment_name,
+            operation="update-image",
+            user_email=user_email,
+            yaml_before=yaml_before,
+            yaml_after=yaml_after,
+        )
+
         return {"status": "updated", "container": container_name, "image": new_image}
 
     except HTTPException:
@@ -492,7 +578,23 @@ def delete_deployment(
         k8s, namespace = get_k8s_context(request)
         apps = k8s.AppsV1Api()
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(
+            k8s, "deployments", deployment_name, namespace
+        )
+
         apps.delete_namespaced_deployment(deployment_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="deployments",
+            resource_name=deployment_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": deployment_name}
 
@@ -730,8 +832,28 @@ def scale_statefulset(
         if replicas is None:
             raise HTTPException(400, "replicas is required")
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(
+            k8s, "statefulsets", statefulset_name, namespace
+        )
+
         body = {"spec": {"replicas": replicas}}
         result = apps.patch_namespaced_stateful_set(statefulset_name, namespace, body)
+
+        yaml_after = _fetch_resource_yaml(
+            k8s, "statefulsets", statefulset_name, namespace
+        )
+        save_resource_snapshot(
+            request=request,
+            resource_type="statefulsets",
+            resource_name=statefulset_name,
+            operation="scale",
+            user_email=user_email,
+            yaml_before=yaml_before,
+            yaml_after=yaml_after,
+        )
 
         return {
             "status": "scaled",
@@ -757,7 +879,23 @@ def delete_statefulset(
         k8s, namespace = get_k8s_context(request)
         apps = k8s.AppsV1Api()
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(
+            k8s, "statefulsets", statefulset_name, namespace
+        )
+
         apps.delete_namespaced_stateful_set(statefulset_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="statefulsets",
+            resource_name=statefulset_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": statefulset_name}
 
@@ -883,7 +1021,21 @@ def delete_daemonset(
         k8s, namespace = get_k8s_context(request)
         apps = k8s.AppsV1Api()
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(k8s, "daemonsets", daemonset_name, namespace)
+
         apps.delete_namespaced_daemon_set(daemonset_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="daemonsets",
+            resource_name=daemonset_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": daemonset_name}
 
@@ -977,7 +1129,21 @@ def delete_job(
         k8s, namespace = get_k8s_context(request)
         batch = k8s.BatchV1Api()
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(k8s, "jobs", job_name, namespace)
+
         batch.delete_namespaced_job(job_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="jobs",
+            resource_name=job_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": job_name}
 
@@ -1072,7 +1238,21 @@ def delete_cronjob(
         k8s, namespace = get_k8s_context(request)
         batch = k8s.BatchV1Api()
 
+        from app.routes.history import save_resource_snapshot, _fetch_resource_yaml
+
+        user_email = user.get("email") if isinstance(user, dict) else str(user)
+        yaml_before = _fetch_resource_yaml(k8s, "cronjobs", cronjob_name, namespace)
+
         batch.delete_namespaced_cron_job(cronjob_name, namespace)
+
+        save_resource_snapshot(
+            request=request,
+            resource_type="cronjobs",
+            resource_name=cronjob_name,
+            operation="delete",
+            user_email=user_email,
+            yaml_before=yaml_before,
+        )
 
         return {"status": "deleted", "name": cronjob_name}
 

@@ -13,23 +13,33 @@ from app.routes import (
     api_v1,
     auth_api,
     context,
+    cost_analysis,
     crd_resources,
     deployments,
+    history,
     metrics,
     namespace_requests,
     network_resources,
     nodes,
     pods,
     replicasets,
+    security,
     storage_resources,
     workloads,
     config_resources,
 )
+from app.routes.snapshot_service import snapshot_service
 
 if os.getenv("KCP_SKIP_BOOTSTRAP") != "1":
     ensure_admin()
 
 app = FastAPI(title="Kubernetes Control Plane")
+
+
+@app.on_event("startup")
+def start_snapshot_service():
+    snapshot_service.start()
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,6 +83,9 @@ app.include_router(network_resources.router)
 app.include_router(storage_resources.router)
 app.include_router(crd_resources.router)
 app.include_router(namespace_requests.router)
+app.include_router(security.router)
+app.include_router(history.router)
+app.include_router(cost_analysis.router)
 
 app.mount("/", StaticFiles(directory="ui/dist", html=True), name="spa")
 

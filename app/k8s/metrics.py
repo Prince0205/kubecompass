@@ -387,34 +387,131 @@ def parse_node_metrics(api_client, host=None, token=None) -> List[Dict[str, Any]
     return []
 
 
-def parse_pod_metrics(api_client, namespace: str) -> List[Dict[str, Any]]:
+def parse_pod_metrics(
+    api_client, namespace: str, host: str = None, token: str = None
+) -> List[Dict[str, Any]]:
     """
     Fetch and parse pod metrics from Kubernetes Metrics API.
 
     Args:
         api_client: Kubernetes ApiClient instance
         namespace: Kubernetes namespace
+        host: Optional API host URL
+        token: Optional auth token
 
     Returns:
         List of dicts with keys: name, namespace, cpu, memory, cpu_cores, memory_bytes
 
     Gracefully returns empty list if Metrics Server is unavailable.
     """
+    import logging
+    import requests
+    import urllib3
+
+    logger = logging.getLogger(__name__)
+
+    # Method 1: Direct HTTP call (most reliable)
+    try:
+        if not host:
+            if hasattr(api_client, "configuration") and api_client.configuration:
+                host = getattr(api_client.configuration, "host", None)
+
+        if not host:
+            raise RuntimeError("No host available")
+
+        url = f"{host.rstrip('/')}/apis/metrics.k8s.io/v1beta1/namespaces/{namespace}/pods"
+
+        auth_token = token
+        if not auth_token:
+            if hasattr(api_client, "default_headers"):
+                auth_token = api_client.default_headers.get("Authorization")
+        if (
+            not auth_token
+            and hasattr(api_client, "configuration")
+            and api_client.configuration
+        ):
+            config = api_client.configuration
+            auth_token = getattr(config, "token", None) or getattr(
+                config, "access_token", None
+            )
+            if not auth_token:
+                api_key = getattr(config, "api_key", {})
+                if isinstance(api_key, dict):
+                    auth_token = api_key.get("authorization")
+            if not auth_token:
+                api_key_prefix = getattr(config, "api_key_prefix", {})
+                api_key = getattr(config, "api_key", {})
+                if isinstance(api_key_prefix, dict) and isinstance(api_key, dict):
+                    prefix = api_key_prefix.get("authorization")
+                    token_value = api_key.get("authorization")
+                    if prefix and token_value:
+                        auth_token = f"{prefix} {token_value}"
+
+        headers = {"Accept": "application/json"}
+        if auth_token:
+            if not auth_token.startswith("Bearer "):
+                auth_token = f"Bearer {auth_token}"
+            headers["Authorization"] = auth_token
+
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        response = requests.get(url, headers=headers, verify=False, timeout=15)
+
+        if response.status_code == 200:
+            metrics_data = response.json()
+            result = []
+            for item in metrics_data.get("items", []):
+                name = item.get("metadata", {}).get("name")
+                ns = item.get("metadata", {}).get("namespace", namespace)
+
+                total_cpu_cores = 0
+                total_memory_bytes = 0
+
+                for container in item.get("containers", []):
+                    usage = container.get("usage", {})
+                    cpu_raw = usage.get("cpu", "0m")
+                    memory_raw = usage.get("memory", "0Mi")
+                    total_cpu_cores += convert_cpu_to_cores(cpu_raw)
+                    total_memory_bytes += convert_memory_to_bytes(memory_raw)
+
+                result.append(
+                    {
+                        "name": name,
+                        "namespace": ns,
+                        "cpu": format_cpu_for_display(
+                            f"{int(total_cpu_cores * 1000)}m"
+                        ),
+                        "memory": format_memory_for_display(total_memory_bytes),
+                        "cpu_cores": total_cpu_cores,
+                        "memory_bytes": total_memory_bytes,
+                    }
+                )
+
+            logger.info(f"HTTP direct parsed {len(result)} pod metrics for {namespace}")
+            return result
+        else:
+            logger.warning(
+                f"Pod metrics API returned {response.status_code} for {namespace}"
+            )
+    except Exception as e:
+        logger.debug(f"HTTP direct pod metrics failed for {namespace}: {e}")
+
+    # Method 2: Try CustomObjectsApi
     try:
         api = CustomObjectsApi(api_client)
-        metrics_list = api.list_namespaced_custom_object(
-            group="metrics.k8s.io",
-            version="v1beta1",
-            namespace=namespace,
-            plural="pods",
-        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            metrics_list = api.list_namespaced_custom_object(
+                group="metrics.k8s.io",
+                version="v1beta1",
+                namespace=namespace,
+                plural="pods",
+            )
 
         result = []
         for item in metrics_list.get("items", []):
             name = item.get("metadata", {}).get("name")
             ns = item.get("metadata", {}).get("namespace", namespace)
 
-            # Sum metrics across all containers in the pod
             total_cpu_cores = 0
             total_memory_bytes = 0
 
@@ -422,7 +519,6 @@ def parse_pod_metrics(api_client, namespace: str) -> List[Dict[str, Any]]:
                 usage = container.get("usage", {})
                 cpu_raw = usage.get("cpu", "0m")
                 memory_raw = usage.get("memory", "0Mi")
-
                 total_cpu_cores += convert_cpu_to_cores(cpu_raw)
                 total_memory_bytes += convert_memory_to_bytes(memory_raw)
 
@@ -438,9 +534,8 @@ def parse_pod_metrics(api_client, namespace: str) -> List[Dict[str, Any]]:
             )
 
         return result
-
     except (ApiException, Exception) as e:
-        # Metrics Server likely not installed
+        logger.debug(f"CustomObjectsApi pod metrics failed for {namespace}: {e}")
         return []
 
 

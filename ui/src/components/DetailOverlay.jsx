@@ -4,9 +4,10 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { XMarkIcon, PencilIcon, ArrowPathIcon, CheckIcon, PlusIcon, TrashIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline'
+import { XMarkIcon, PencilIcon, ArrowPathIcon, CheckIcon, PlusIcon, TrashIcon, ArrowDownTrayIcon, CommandLineIcon } from '@heroicons/react/24/outline'
 import yaml from 'js-yaml'
 import { v1API, workloadAPI } from '../api'
+import PodTerminal from './PodTerminal'
 
 export default function DetailOverlay({
   isOpen = false,
@@ -72,6 +73,12 @@ export default function DetailOverlay({
         .finally(() => setYamlLoading(false))
     }
   }, [isOpen, title, resourceType])
+
+  // Reset container selection when pod changes
+  useEffect(() => {
+    setSelectedContainer('')
+    setContainers([])
+  }, [title, isOpen])
 
   useEffect(() => {
     if (data) {
@@ -219,7 +226,7 @@ export default function DetailOverlay({
     }
 
     if (resourceType === 'pods') {
-      return [...defaultTabs.slice(0, 1), { id: 'logs', label: 'Logs' }, ...defaultTabs.slice(1)]
+      return [...defaultTabs.slice(0, 1), { id: 'logs', label: 'Logs' }, { id: 'terminal', label: 'Terminal' }, ...defaultTabs.slice(1)]
     }
 
     if (resourceType === 'crds') {
@@ -1535,6 +1542,15 @@ export default function DetailOverlay({
                       ))
                 )}
                 {activeTab === 'logs' && renderLogs()}
+                {activeTab === 'terminal' && resourceType === 'pods' && (
+                  <div className="h-96">
+                    <PodTerminal
+                      podName={title}
+                      namespace={data?.metadata?.namespace || data?.namespace || ''}
+                      container={selectedContainer}
+                    />
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-slate-400 py-8 text-center">No data</p>

@@ -24,6 +24,7 @@ export default function RBACResources() {
   const [showDetail, setShowDetail] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const isFirstRender = useRef(true)
+  const prevResourceType = useRef('')
   
   const path = location.pathname
   
@@ -90,8 +91,16 @@ export default function RBACResources() {
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false
+      prevResourceType.current = resourceType
       return
     }
+
+    // Only trigger on resourceType changes, not on namespace changes
+    if (resourceType === prevResourceType.current) {
+      prevResourceType.current = resourceType
+      return
+    }
+    prevResourceType.current = resourceType
     
     const isClusterScopedResource = RBAC_CLUSTER_SCOPED.includes(resourceType)
     
