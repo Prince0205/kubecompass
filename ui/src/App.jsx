@@ -15,6 +15,10 @@ import Nodes from './pages/Nodes'
 import Security from './pages/Security'
 import History from './pages/History'
 import CostAnalysis from './pages/CostAnalysis'
+import Topology from './pages/Topology'
+import Compare from './pages/Compare'
+import Helm from './pages/Helm'
+import AIAssistant from './pages/AIAssistant'
 
 function ProtectedLayout() {
   const { auth, authLoading } = useAppContext()
@@ -61,6 +65,10 @@ function ProtectedLayout() {
             <Route path="/security" element={<Security />} />
             <Route path="/history" element={<History />} />
             <Route path="/cost" element={<CostAnalysis />} />
+            <Route path="/topology" element={<Topology />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/helm" element={<Helm />} />
+            <Route path="/ai" element={<AIAssistant />} />
             <Route path="/approvals" element={<Approvals />} />
             <Route path="/editor" element={<Editor />} />
             <Route path="/resources" element={<Resources />} />

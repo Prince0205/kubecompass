@@ -22,6 +22,9 @@ import {
   ShieldCheckIcon,
   ClockIcon,
   CurrencyDollarIcon,
+  ShareIcon,
+  ArrowsRightLeftIcon,
+  Squares2X2Icon,
 } from '@heroicons/react/24/outline'
 import axios from 'axios'
 import { useAppContext } from '../context/AppContext'
@@ -97,6 +100,10 @@ export default function Sidebar() {
         { label: 'Security', path: '/security', icon: ShieldCheckIcon },
         { label: 'History', path: '/history', icon: ClockIcon },
         { label: 'Cost Analysis', path: '/cost', icon: CurrencyDollarIcon },
+        { label: 'Topology', path: '/topology', icon: ShareIcon },
+        { label: 'Compare', path: '/compare', icon: ArrowsRightLeftIcon },
+        { label: 'Helm', path: '/helm', icon: Squares2X2Icon },
+        { label: 'AI Assistant', path: '/ai', icon: SparklesIcon },
       ],
     },
     {

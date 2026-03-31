@@ -274,10 +274,78 @@ export const historyAPI = {
 }
 
 // ============================================================================
+// TOPOLOGY API CALLS
+// ============================================================================
+
+export const topologyAPI = {
+  getGraph: (namespace) => apiClient.get('/api/topology/graph', { params: namespace ? { namespace } : {} }),
+}
+
+// ============================================================================
+// MULTI-CLUSTER COMPARE API CALLS
+// ============================================================================
+
+export const compareAPI = {
+  getClusters: () => apiClient.get('/api/compare/clusters'),
+  getResourceTypes: () => apiClient.get('/api/compare/resource-types'),
+  getResources: (clusterA, clusterB, resourceType, namespace) =>
+    apiClient.get('/api/compare/resources', {
+      params: { cluster_a: clusterA, cluster_b: clusterB, resource_type: resourceType, namespace },
+    }),
+  getNamespaces: (clusterId) =>
+    apiClient.get('/api/compare/namespaces', { params: { cluster_id: clusterId } }),
+}
+
+// ============================================================================
 // COST ANALYSIS API CALLS
 // ============================================================================
 
 export const costAPI = {
   analyze: () => apiClient.get('/api/cost/analyze'),
   rightsize: () => apiClient.get('/api/cost/rightsize'),
+}
+
+// ============================================================================
+// HELM MANAGER API CALLS
+// ============================================================================
+
+export const helmAPI = {
+  // Releases
+  listReleases: (namespace, allNamespaces) => apiClient.get('/api/helm/releases', {
+    params: { ...(namespace ? { namespace } : {}), ...(allNamespaces ? { all_namespaces: true } : {}) },
+  }),
+  getHistory: (name, namespace) => apiClient.get(`/api/helm/releases/${name}/history`, { params: namespace ? { namespace } : {} }),
+  getValues: (name, namespace) => apiClient.get(`/api/helm/releases/${name}/values`, { params: namespace ? { namespace } : {} }),
+  getManifest: (name, namespace) => apiClient.get(`/api/helm/releases/${name}/manifest`, { params: namespace ? { namespace } : {} }),
+  getNotes: (name, namespace) => apiClient.get(`/api/helm/releases/${name}/notes`, { params: namespace ? { namespace } : {} }),
+  installRelease: (name, chart, namespace, version, values) => apiClient.post('/api/helm/releases', { name, chart, namespace, version, values }),
+  upgradeRelease: (name, chart, namespace, version) => apiClient.put(`/api/helm/releases/${name}`, { chart, namespace, version }),
+  rollbackRelease: (name, revision, namespace) => apiClient.post(`/api/helm/releases/${name}/rollback`, { revision, namespace }),
+  uninstallRelease: (name, namespace) => apiClient.delete(`/api/helm/releases/${name}`, { params: namespace ? { namespace } : {} }),
+
+  // Repos
+  listRepos: () => apiClient.get('/api/helm/repos'),
+  addRepo: (name, url) => apiClient.post('/api/helm/repos', { name, url }),
+  removeRepo: (name) => apiClient.delete(`/api/helm/repos/${name}`),
+  updateRepos: () => apiClient.post('/api/helm/repos/update'),
+
+  // Search
+  searchCharts: (keyword) => apiClient.get('/api/helm/search', { params: { keyword } }),
+  searchHub: (keyword) => apiClient.get('/api/helm/search/hub', { params: { keyword } }),
+
+  // Chart values (for pre-install editing)
+  getChartValues: (chart, version) => apiClient.get('/api/helm/chart-values', {
+    params: { chart, ...(version ? { version } : {}) },
+  }),
+}
+
+// ============================================================================
+// AI ASSISTANT API CALLS
+// ============================================================================
+
+export const aiAPI = {
+  chat: (message) => apiClient.post('/api/ai/chat', { message }),
+  execute: (command, dryRun = false, dryRunCommand = null) =>
+    apiClient.post('/api/ai/execute', { command, dry_run: dryRun, dry_run_command: dryRunCommand }),
+  getStatus: () => apiClient.get('/api/ai/status'),
 }

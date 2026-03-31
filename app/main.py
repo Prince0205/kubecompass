@@ -9,13 +9,16 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from app.auth.local import ensure_admin
 from app.routes import (
+    ai_assistant,
     api_resources,
     api_v1,
     auth_api,
+    compare,
     context,
     cost_analysis,
     crd_resources,
     deployments,
+    helm,
     history,
     metrics,
     namespace_requests,
@@ -25,6 +28,7 @@ from app.routes import (
     replicasets,
     security,
     storage_resources,
+    topology,
     workloads,
     config_resources,
 )
@@ -86,6 +90,10 @@ app.include_router(namespace_requests.router)
 app.include_router(security.router)
 app.include_router(history.router)
 app.include_router(cost_analysis.router)
+app.include_router(topology.router)
+app.include_router(compare.router)
+app.include_router(helm.router)
+app.include_router(ai_assistant.router)
 
 app.mount("/", StaticFiles(directory="ui/dist", html=True), name="spa")
 
